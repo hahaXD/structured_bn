@@ -11,11 +11,15 @@ namespace structured_bn {
 class Network {
  public:
   static Network *GetNetworkFromSpecFile(const char *filename);
+  ~Network();
   // returns an arbitrary topological order. The root shows before leaves
   std::vector<Cluster *> ArbitraryTopologicalOrder() const;
   std::vector<Cluster *> RootClustersAfterCondition(const std::vector<Cluster *> &clusters_conditioned) const;
   const std::vector<Cluster *> &clusters() const;
-  // returns 
+  Probability CalculateProbability(BinaryData *data) const;
+  void LearnParametersUsingLaplacianSmoothing(BinaryData *data, const PsddParameter &alpha);
+  bool IsModel(const std::bitset<MAX_VAR> &variable_mask, const std::bitset<MAX_VAR> &instantiation) const;
+  // returns
   uint32_t cluster_size() const;
  private:
   Network(std::vector<std::string> variable_names,
