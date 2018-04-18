@@ -58,7 +58,7 @@ const option::Descriptor usage[] =
         {VTREE_FILENAME, 0, "", "vtree_filename", Arg::Required,
          "--vtree_filename the output filename for joint vtree"},
         {UNKNOWN, 0, "", "", option::Arg::None,
-         "\nExamples:\n./sbn_main --sample_parameter  --mpe_query network.json "},
+         "\nExamples:\n./structured_bn_main --psdd_filename <psdd_filename> --vtree_filename <vtree_filename> network.json\n"},
         {0, 0, 0, 0, 0, 0}
     };
 
@@ -89,7 +89,6 @@ int main(int argc, const char *argv[]) {
     train_data = new BinaryData();
   }
   network->LearnParametersUsingLaplacianSmoothing(train_data, PsddParameter::CreateFromDecimal(1));
-  delete (train_data);
   if (options[PSDD_FILENAME]) {
     const char *psdd_filename = options[PSDD_FILENAME].arg;
     NetworkCompiler *compiler = NetworkCompiler::GetDefaultNetworkCompiler(network);
