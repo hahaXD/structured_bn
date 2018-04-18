@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 #include <queue>
-#include <cache.h>
+#include <iostream>
 #include "network_compiler.h"
 namespace {
 using structured_bn::Cluster;
@@ -15,30 +15,30 @@ PsddNode *RecoverPsdd(PsddNode *before_recovery,
                       const std::vector<PsddNode *> &succedents,
                       PsddManager *target_manager) {
   std::vector<SddLiteral> succedent_variables = vtree_util::VariablesUnderVtree(succedents[0]->vtree_node());
-  Vtree* x_node_in_target_manager = nullptr;
-  std::vector<Vtree*> serialized_vtrees = vtree_util::SerializeVtree(target_manager->vtree());
-  std::unordered_set<SddLiteral> succedent_variables_set (succedent_variables.begin(), succedent_variables.end());
-  for (auto v_it = serialized_vtrees.rbegin(); v_it != serialized_vtrees.rend(); ++v_it){
-    Vtree* cur_vnode = *v_it;
-    if (sdd_vtree_is_leaf(cur_vnode)){
-      if (succedent_variables_set.find(sdd_vtree_var(cur_vnode)) != succedent_variables_set.end()){
-        sdd_vtree_set_data((void*)1, cur_vnode);
+  Vtree *x_node_in_target_manager = nullptr;
+  std::vector<Vtree *> serialized_vtrees = vtree_util::SerializeVtree(target_manager->vtree());
+  std::unordered_set<SddLiteral> succedent_variables_set(succedent_variables.begin(), succedent_variables.end());
+  for (auto v_it = serialized_vtrees.rbegin(); v_it != serialized_vtrees.rend(); ++v_it) {
+    Vtree *cur_vnode = *v_it;
+    if (sdd_vtree_is_leaf(cur_vnode)) {
+      if (succedent_variables_set.find(sdd_vtree_var(cur_vnode)) != succedent_variables_set.end()) {
+        sdd_vtree_set_data((void *) 1, cur_vnode);
         x_node_in_target_manager = cur_vnode;
-      }else{
+      } else {
         sdd_vtree_set_data(nullptr, cur_vnode);
       }
-    }else{
-      Vtree* left_child = sdd_vtree_left(cur_vnode);
-      Vtree* right_child = sdd_vtree_right(cur_vnode);
-      if (sdd_vtree_data(left_child) && sdd_vtree_data(right_child)){
-        sdd_vtree_set_data((void*)1, cur_vnode);
+    } else {
+      Vtree *left_child = sdd_vtree_left(cur_vnode);
+      Vtree *right_child = sdd_vtree_right(cur_vnode);
+      if (sdd_vtree_data(left_child) && sdd_vtree_data(right_child)) {
+        sdd_vtree_set_data((void *) 1, cur_vnode);
         x_node_in_target_manager = cur_vnode;
-      }else{
+      } else {
         sdd_vtree_set_data(nullptr, cur_vnode);
       }
     }
   }
-  for (Vtree* cur_vnode : serialized_vtrees){
+  for (Vtree *cur_vnode : serialized_vtrees) {
     sdd_vtree_set_data(nullptr, cur_vnode);
   }
   serialized_vtrees = vtree_util::SerializeVtree(before_recovery->vtree_node());
@@ -113,9 +113,9 @@ PsddNode *RecoverPsdd(PsddNode *before_recovery,
         std::vector<PsddNode *> new_primes;
         std::vector<PsddNode *> new_subs;
         auto element_size = cur_primes.size();
-        for (auto i = 0; i < element_size; ++i){
-          new_primes.push_back((PsddNode*) cur_primes[i]->user_data());
-          new_subs.push_back((PsddNode*) cur_subs[i]->user_data());
+        for (auto i = 0; i < element_size; ++i) {
+          new_primes.push_back((PsddNode *) cur_primes[i]->user_data());
+          new_subs.push_back((PsddNode *) cur_subs[i]->user_data());
         }
         PsddNode *new_node = target_manager->GetConformedPsddDecisionNode(new_primes, new_subs, params, 0);
         cur_node->SetUserData((uintmax_t) new_node);
@@ -337,7 +337,8 @@ PsddNode *NetworkCompiler::ConformLocalPsdd(Cluster *target_cluster,
     for (auto k = 0; k < condition_size; ++k) {
       PsddNode *cur_antecedent = cur_cluster_antecedents[k];
       std::vector<PsddNode *> serialized_psdd_nodes = psdd_node_util::SerializePsddNodes(cur_antecedent);
-      SddNode *cur_antecedent_sdd = psdd_node_util::ConvertPsddNodeToSddNode(serialized_psdd_nodes, sdd_manager);
+      SddNode *cur_antecedent_sdd =
+          psdd_node_util::ConvertPsddNodeToSddNode(serialized_psdd_nodes, antecedent_variables_to_sdd_index, sdd_manager);
       SddNode *cur_constraint = sdd_conjoin(cur_antecedent_sdd,
                                             sdd_manager_literal(condition_temp_index_to_sdd_index[k + 1], sdd_manager),
                                             sdd_manager);
@@ -384,21 +385,35 @@ PsddNode *NetworkCompiler::ConformLocalPsdd(Cluster *target_cluster,
   return result_psdd;
 }
 
-PsddNode *NetworkCompiler::Compile() {
-  const auto& clusters = network_->clusters();
-  PsddNode* accumulator = joint_psdd_manager_->GetTrueNode(joint_psdd_manager_->vtree(), 0);
+std::pair<PsddNode *, Probability> NetworkCompiler::Compile() {
+  const auto &clusters = network_->clusters();
+  PsddNode *accumulator = joint_psdd_manager_->GetTrueNode(joint_psdd_manager_->vtree(), 0);
   Probability partition = Probability::CreateFromDecimal(1);
-  for (Cluster* cur_cluster : clusters){
-    PsddNode* psdd_node = ConformLocalPsdd(cur_cluster, joint_psdd_manager_);
+  Probability zero_prob = Probability::CreateFromDecimal(1);
+  std::bitset<MAX_VAR> mask;
+  mask.set();
+  std::bitset<MAX_VAR> zero_instantiation;
+  zero_instantiation.reset();
+  std::vector<Cluster*> top_clusters = network_->ArbitraryTopologicalOrder();
+  for (Cluster *cur_cluster : top_clusters) {
+    PsddNode *psdd_node = ConformLocalPsdd(cur_cluster, joint_psdd_manager_);
+    Probability local_zero_prob = psdd_node_util::Evaluate(mask, zero_instantiation, psdd_node);
+    zero_prob = local_zero_prob * zero_prob;
     auto multiply_result = joint_psdd_manager_->Multiply(accumulator, psdd_node, 0);
     partition = partition * multiply_result.second;
+    std::cout << "Cluster name " << network_->cluster_names()[cur_cluster->cluster_index()]<<std::endl;
+    std::cout << "Partition function " << std::log2(std::exp(partition.parameter())) << std::endl;
+    std::cout << "variables inside this cluster " << sdd_vtree_var_count(cur_cluster->succedent_vtree()) << std::endl;
     accumulator = multiply_result.first;
     joint_psdd_manager_->DeleteUnusedPsddNodes({accumulator});
   }
-  return accumulator;
+  return {accumulator, partition};
 }
 NetworkCompiler::~NetworkCompiler() {
-  delete(joint_psdd_manager_);
+  delete (joint_psdd_manager_);
+}
+Vtree *NetworkCompiler::GetVtree() const {
+  return joint_psdd_manager_->vtree();
 }
 
 }

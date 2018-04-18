@@ -141,6 +141,81 @@ Network *ConstructNetwork1() {
   sdd_manager_free(sdd_manager);
   return result_network;
 }
+
+Network *ConstructNetwork2() {
+  // root cluster contains 5 variables
+  // leave cluster contains 5 variables
+  Vtree *parent_vtree = sdd_vtree_new(5, "right");
+  SddManager *sdd_manager = sdd_manager_new(parent_vtree);
+  sdd_manager_auto_gc_and_minimize_off(sdd_manager);
+  sdd_vtree_free(parent_vtree);
+  std::unordered_map<uint32_t, std::unordered_map<uint32_t, SddNode *>> cache;
+  SddNode *card3 = CardinalityK(5, 3, sdd_manager, &cache);
+  SddNode *card4 = CardinalityK(5, 4, sdd_manager, &cache);
+  SddNode *card2 = CardinalityK(5, 2, sdd_manager, &cache);
+  SddNode *root_constraint = sdd_disjoin(card2, sdd_disjoin(card3, card4, sdd_manager), sdd_manager);
+  sdd_save("/tmp/root_constraint.sdd", root_constraint);
+  sdd_vtree_save("/tmp/rl_vtree.vtree", sdd_manager_vtree(sdd_manager));
+  std::string root_succedent_vtree = "/tmp/rl_vtree.vtree";
+  std::vector<std::string> root_succedent = {"/tmp/root_constraint.sdd"};
+  std::unordered_map<std::string, uint32_t> root_variable_map;
+  for (auto i = 1; i <= 5; ++i) {
+    root_variable_map[std::to_string(i)] = (uint32_t) i;
+  }
+  std::string leaf_antecedent_vtree = "/tmp/rl_vtree.vtree";
+  std::unordered_map<std::string, uint32_t> leaf_antecedent_variable_mapping = root_variable_map;
+  auto parity_sdd = OddEvenFunction(5, sdd_manager);
+  sdd_save("/tmp/even.sdd", parity_sdd.first);
+  sdd_save("/tmp/odd.sdd", parity_sdd.second);
+  std::vector<std::string> leaf_antecedents = {"/tmp/even.sdd", "/tmp/odd.sdd"};
+  sdd_save("/tmp/card2.sdd", card2);
+  sdd_save("/tmp/card234.sdd", root_constraint);
+  std::vector<std::string> leaf_succedents = {"/tmp/card2.sdd", "/tmp/card234.sdd"};
+  std::string leaf_succedent_vtree = "/tmp/rl_vtree.vtree";
+  std::unordered_map<std::string, uint32_t> leaf_succedent_variable_map;
+  for (auto i = 1; i <= 5; ++i) {
+    leaf_succedent_variable_map[std::to_string(i+5)] = (uint32_t) i;
+  }
+  std::unordered_map<std::string, uint32_t> lowest_leaf_antecedent_variable_map;
+  std::unordered_map<std::string, uint32_t> lowest_leaf_succedent_variable_map;
+  for (auto i = 1; i <= 5; ++i){
+    lowest_leaf_antecedent_variable_map[std::to_string(i+5)] = (uint32_t)i;
+    lowest_leaf_succedent_variable_map[std::to_string(i+10)] = (uint32_t)i;
+  }
+  std::unordered_map<std::string, json> root_cluster_spec;
+  root_cluster_spec["cluster_name"] = "root";
+  root_cluster_spec["parents"] = std::vector<std::string>();
+  root_cluster_spec["constraint"]["then"] = root_succedent;
+  root_cluster_spec["constraint"]["then_vtree"] = root_succedent_vtree;
+  root_cluster_spec["constraint"]["then_variable_mapping"] = root_variable_map;
+  std::unordered_map<std::string, json> leaf_cluster_spec;
+  leaf_cluster_spec["parents"] = {"root"};
+  leaf_cluster_spec["cluster_name"] = "leaf";
+  leaf_cluster_spec["constraint"]["if"] = leaf_antecedents;
+  leaf_cluster_spec["constraint"]["if_vtree"] = leaf_antecedent_vtree;
+  leaf_cluster_spec["constraint"]["if_variable_mapping"] = leaf_antecedent_variable_mapping;
+  leaf_cluster_spec["constraint"]["then"] = leaf_succedents;
+  leaf_cluster_spec["constraint"]["then_vtree"] = leaf_succedent_vtree;
+  leaf_cluster_spec["constraint"]["then_variable_mapping"] = leaf_succedent_variable_map;
+  std::unordered_map<std::string, json> lowest_leaf_cluster_spec;
+  lowest_leaf_cluster_spec["parents"] = {"leaf"};
+  lowest_leaf_cluster_spec["cluster_name"] = "lowest_leaf";
+  lowest_leaf_cluster_spec["constraint"]["if"] = leaf_antecedents;
+  lowest_leaf_cluster_spec["constraint"]["if_vtree"] = leaf_antecedent_vtree;
+  lowest_leaf_cluster_spec["constraint"]["if_variable_mapping"] = lowest_leaf_antecedent_variable_map;
+  lowest_leaf_cluster_spec["constraint"]["then"] = leaf_succedents;
+  lowest_leaf_cluster_spec["constraint"]["then_vtree"] = leaf_succedent_vtree;
+  lowest_leaf_cluster_spec["constraint"]["then_variable_mapping"] = lowest_leaf_succedent_variable_map;
+  json spec;
+  spec["variables"] = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15"};
+  spec["clusters"] = {root_cluster_spec, leaf_cluster_spec, lowest_leaf_cluster_spec};
+  std::ofstream of ("/tmp/sbn_test_network2.json");
+  of << std::setw(2) << spec << std::endl;
+  Network* result_network = Network::GetNetworkFromSpecFile("/tmp/sbn_test_network2.json");
+  sdd_manager_free(sdd_manager);
+  return result_network;
+}
+
 }
 
 TEST(SBN_NETWORK_TEST, MODEL_CHECK_TEST){
@@ -183,16 +258,35 @@ TEST(SBN_NETWORK_TEST, COMPILATION_TEST){
   auto data = new BinaryData();
   network->LearnParametersUsingLaplacianSmoothing(data, PsddParameter::CreateFromDecimal(1));
   NetworkCompiler* compiler = NetworkCompiler::GetDefaultNetworkCompiler(network);
-  PsddNode* result = compiler->Compile();
+  auto result = compiler->Compile();
   std::bitset<MAX_VAR> variable_mask = (1<<11)-1;
   std::bitset<MAX_VAR> instantiation1;
   instantiation1.set(1);
   instantiation1.set(2);
   instantiation1.set(6);
   instantiation1.set(7);
-  Probability pr_result = psdd_node_util::Evaluate(variable_mask,instantiation1, result);
+  Probability pr_result = psdd_node_util::Evaluate(variable_mask,instantiation1, result.first);
   EXPECT_DOUBLE_EQ(pr_result.parameter(), std::log(std::pow(0.5,7)));
   delete(compiler);
   delete(network);
+  delete(data);
+
+  Network* network2 = ConstructNetwork2();
+  data = new BinaryData();
+  network2->LearnParametersUsingLaplacianSmoothing(data, PsddParameter::CreateFromDecimal(1));
+  compiler = NetworkCompiler::GetDefaultNetworkCompiler(network2);
+  result = compiler->Compile();
+  variable_mask = (1<<16)-1;
+  instantiation1.reset();
+  instantiation1.set(1);
+  instantiation1.set(2);
+  instantiation1.set(6);
+  instantiation1.set(7);
+  instantiation1.set(11);
+  instantiation1.set(12);
+  pr_result = psdd_node_util::Evaluate(variable_mask,instantiation1, result.first);
+  EXPECT_DOUBLE_EQ(pr_result.parameter(), std::log(std::pow(0.5,9)));
+  delete(compiler);
+  delete(network2);
   delete(data);
 }

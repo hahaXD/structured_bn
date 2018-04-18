@@ -5,6 +5,7 @@
 #include "network.h"
 #include <json.hpp>
 #include <fstream>
+#include <iostream>
 
 using nlohmann::json;
 namespace structured_bn {
@@ -104,6 +105,7 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
         }
       }
       if (parent_processed) {
+        std::cout << "Constructing cluster " << cur_cluster_info["cluster_name"] << std::endl;
         unprocessed_cluster_indexes_it = unprocessed_cluster_indexes.erase(unprocessed_cluster_indexes_it);
         processed_cluster_indexes.insert(cur_cluster_index);
         std::string antecedent_vtree_filename;
@@ -143,6 +145,7 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
             antecedent_variable_map[sdd_variable_index] = psdd_variable_index;
           }
         }
+        std::cout << "Performing then part" << std::endl;
         assert(constraint.find("then_vtree") != constraint.end());
         succedent_vtree_filename = constraint["then_vtree"];
         assert(constraint.find("then") != constraint.end());
@@ -207,6 +210,12 @@ Probability Network::CalculateProbability(BinaryData *data) const {
     total_probability = total_probability * cur_cluster->CalculateProbability(data);
   }
   return total_probability;
+}
+const std::vector<std::string> &Network::variable_names() const {
+  return variable_names_;
+}
+const std::vector<std::string> &Network::cluster_names() const {
+  return cluster_names_;
 }
 
 }

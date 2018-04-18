@@ -21,6 +21,8 @@ class Network {
   bool IsModel(const std::bitset<MAX_VAR> &variable_mask, const std::bitset<MAX_VAR> &instantiation) const;
   // returns
   uint32_t cluster_size() const;
+  const std::vector<std::string>& variable_names() const;
+  const std::vector<std::string>& cluster_names() const;
  private:
   Network(std::vector<std::string> variable_names,
           std::vector<Cluster *> clusters,

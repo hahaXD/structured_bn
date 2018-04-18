@@ -10,10 +10,11 @@ class NetworkCompiler {
  public:
   static NetworkCompiler *GetDefaultNetworkCompiler(Network *network);
   ~NetworkCompiler();
-  PsddNode* Compile();
+  std::pair<PsddNode*, Probability> Compile();
   // input must share the succedent vtree.
   static PsddNode *ConformLocalPsdd(Cluster *target_cluster,
                                     PsddManager *target_manager);
+  Vtree* GetVtree() const;
  private:
   explicit NetworkCompiler(Network *network, PsddManager *joint_psdd_manager);
   Network *network_;
