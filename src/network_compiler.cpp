@@ -402,7 +402,7 @@ std::pair<PsddNode *, Probability> NetworkCompiler::Compile() {
     auto multiply_result = joint_psdd_manager_->Multiply(accumulator, psdd_node, 0);
     partition = partition * multiply_result.second;
     std::cout << "Cluster name " << network_->cluster_names()[cur_cluster->cluster_index()]<<std::endl;
-    std::cout << "Partition function " << std::log2(std::exp(partition.parameter())) << std::endl;
+    std::cout << "Partition function " << partition.parameter()/log(2) << std::endl;
     std::cout << "variables inside this cluster " << sdd_vtree_var_count(cur_cluster->succedent_vtree()) << std::endl;
     accumulator = multiply_result.first;
     joint_psdd_manager_->DeleteUnusedPsddNodes({accumulator});

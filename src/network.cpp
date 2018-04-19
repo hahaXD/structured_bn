@@ -145,7 +145,6 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
             antecedent_variable_map[sdd_variable_index] = psdd_variable_index;
           }
         }
-        std::cout << "Performing then part" << std::endl;
         assert(constraint.find("then_vtree") != constraint.end());
         succedent_vtree_filename = constraint["then_vtree"];
         assert(constraint.find("then") != constraint.end());
