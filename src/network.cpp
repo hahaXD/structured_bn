@@ -84,7 +84,7 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
     assert(cur_cluster_spec.find("cluster_name") != cur_cluster_spec.end());
     std::string cluster_name = cur_cluster_spec["cluster_name"];
     cluster_names.emplace_back(cluster_name);
-    cluster_names_lookup[cluster_names.back()] = (uint32_t)cluster_index;
+    cluster_names_lookup[cluster_names.back()] = (uint32_t) cluster_index;
     unprocessed_cluster_indexes.insert((uint32_t) (cluster_index));
   }
   std::unordered_set<uint32_t> processed_cluster_indexes;
@@ -185,19 +185,19 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
 }
 
 Network::~Network() {
-  for (Cluster* cur_cluster : clusters_){
-    delete(cur_cluster);
+  for (Cluster *cur_cluster : clusters_) {
+    delete (cur_cluster);
   }
 }
-void Network::LearnParametersUsingLaplacianSmoothing(BinaryData *data, const PsddParameter& alpha) {
-  for (Cluster* cur_cluster : clusters_){
+void Network::LearnParametersUsingLaplacianSmoothing(BinaryData *data, const PsddParameter &alpha) {
+  for (Cluster *cur_cluster : clusters_) {
     cur_cluster->LearnParametersUsingLaplacianSmoothing(data, alpha);
   }
 }
 bool Network::IsModel(const std::bitset<MAX_VAR> &variable_mask,
                       const std::bitset<MAX_VAR> &instantiation) const {
-  for (Cluster* cur_cluster : clusters_){
-    if (!cur_cluster->IsModel(variable_mask, instantiation)){
+  for (Cluster *cur_cluster : clusters_) {
+    if (!cur_cluster->IsModel(variable_mask, instantiation)) {
       return false;
     }
   }
@@ -205,7 +205,7 @@ bool Network::IsModel(const std::bitset<MAX_VAR> &variable_mask,
 }
 Probability Network::CalculateProbability(BinaryData *data) const {
   Probability total_probability = Probability::CreateFromDecimal(1);
-  for (Cluster* cur_cluster : clusters_){
+  for (Cluster *cur_cluster : clusters_) {
     total_probability = total_probability * cur_cluster->CalculateProbability(data);
   }
   return total_probability;
@@ -217,4 +217,12 @@ const std::vector<std::string> &Network::cluster_names() const {
   return cluster_names_;
 }
 
+std::unordered_map<std::string, uint32_t> Network::GetVariableIndexMap() const {
+  std::unordered_map<std::string, uint32_t> variable_index_map;
+  auto variable_name_size = variable_names_.size();
+  for (auto i = 1; i < variable_name_size; ++i){
+    variable_index_map[variable_names_[i]] = (uint32_t) i;
+  }
+  return variable_index_map;
+}
 }

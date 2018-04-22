@@ -1,0 +1,14 @@
+*.dSYM
+*.o
+*.gcno
+*.gcda
+
+build
+build_coverage
+clang_analyze_build
+
+doc/xml
+doc/html
+
+.idea
+cmake-build-debug

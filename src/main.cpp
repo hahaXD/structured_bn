@@ -40,7 +40,8 @@ struct Arg : public option::Arg {
 enum optionIndex {
   UNKNOWN,
   HELP,
-  DATASET_FILE,
+  SPARSE_LEARNING_DATASET_FILE,
+  LEARNING_DATASET_FILE,
   PSDD_FILENAME,
   VTREE_FILENAME,
   CNF_EVID
@@ -50,7 +51,9 @@ const option::Descriptor usage[] =
     {
         {UNKNOWN, 0, "", "", option::Arg::None, "USAGE: example [options]\n\n \tOptions:"},
         {HELP, 0, "h", "help", option::Arg::None, "--help  \tPrint usage and exit."},
-        {DATASET_FILE, 0, "", "learning_dataset", Arg::Required,
+        {SPARSE_LEARNING_DATASET_FILE, 0, "", "sparse_learning_dataset", Arg::Required,
+         "--sparsed_learning_dataset Set sparse dataset file which is used to learn parameters in the SBN\""},
+        {LEARNING_DATASET_FILE, 0, "", "learning_dataset", Arg::Required,
          "--learning_dataset Set dataset file which is used to learn parameters in the SBN"},
         {CNF_EVID, 0, "", "cnf_evid", Arg::Required, "--cnf_evid  evid file, represented using CNF."},
         {PSDD_FILENAME, 0, "", "psdd_filename", Arg::Required,
@@ -80,13 +83,16 @@ int main(int argc, const char *argv[]) {
   const char *network_file = parse.nonOption(0);
   Network *network = Network::GetNetworkFromSpecFile(network_file);
   BinaryData *train_data = nullptr;
-  if (options[DATASET_FILE]) {
-    const char *data_file = options[DATASET_FILE].arg;
+  if (options[LEARNING_DATASET_FILE]) {
+    const char *data_file = options[LEARNING_DATASET_FILE].arg;
     train_data = new BinaryData();
     train_data->ReadFile(data_file);
 
-  } else {
-    train_data = new BinaryData();
+  } else if (options[SPARSE_LEARNING_DATASET_FILE]) {
+    const  char* data_file = options[SPARSE_LEARNING_DATASET_FILE].arg;
+    train_data = BinaryData::ReadSparseDataJsonFile(data_file);
+  }else {
+      train_data = new BinaryData();
   }
   network->LearnParametersUsingLaplacianSmoothing(train_data, PsddParameter::CreateFromDecimal(1));
   if (options[PSDD_FILENAME]) {
@@ -96,8 +102,8 @@ int main(int argc, const char *argv[]) {
     auto model_count = psdd_node_util::ModelCount(psdd_node_util::SerializePsddNodes(result.first));
     std::cout << "Model count " << model_count.get_str(10) << std::endl;
     psdd_node_util::WritePsddToFile(result.first, psdd_filename);
-    if (options[VTREE_FILENAME]){
-      const char* vtree_filename = options[VTREE_FILENAME].arg;
+    if (options[VTREE_FILENAME]) {
+      const char *vtree_filename = options[VTREE_FILENAME].arg;
       sdd_vtree_save(vtree_filename, compiler->GetVtree());
     }
     delete (compiler);

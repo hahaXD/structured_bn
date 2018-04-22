@@ -19,7 +19,7 @@ class Network {
   Probability CalculateProbability(BinaryData *data) const;
   void LearnParametersUsingLaplacianSmoothing(BinaryData *data, const PsddParameter &alpha);
   bool IsModel(const std::bitset<MAX_VAR> &variable_mask, const std::bitset<MAX_VAR> &instantiation) const;
-  // returns
+  std::unordered_map<std::string, uint32_t> GetVariableIndexMap() const;
   uint32_t cluster_size() const;
   const std::vector<std::string>& variable_names() const;
   const std::vector<std::string>& cluster_names() const;
