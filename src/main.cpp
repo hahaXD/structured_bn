@@ -52,7 +52,7 @@ const option::Descriptor usage[] =
         {UNKNOWN, 0, "", "", option::Arg::None, "USAGE: example [options]\n\n \tOptions:"},
         {HELP, 0, "h", "help", option::Arg::None, "--help  \tPrint usage and exit."},
         {SPARSE_LEARNING_DATASET_FILE, 0, "", "sparse_learning_dataset", Arg::Required,
-         "--sparsed_learning_dataset Set sparse dataset file which is used to learn parameters in the SBN\""},
+         "--sparse_learning_dataset Set sparse dataset file which is used to learn parameters in the SBN\""},
         {LEARNING_DATASET_FILE, 0, "", "learning_dataset", Arg::Required,
          "--learning_dataset Set dataset file which is used to learn parameters in the SBN"},
         {CNF_EVID, 0, "", "cnf_evid", Arg::Required, "--cnf_evid  evid file, represented using CNF."},
