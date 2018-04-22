@@ -42,9 +42,9 @@ enum optionIndex {
   HELP,
   SPARSE_LEARNING_DATASET_FILE,
   LEARNING_DATASET_FILE,
+  CNF_EVID,
   PSDD_FILENAME,
   VTREE_FILENAME,
-  CNF_EVID
 };
 
 const option::Descriptor usage[] =
