@@ -1,3 +1,4 @@
 [submodule "psdd"]
 	path = lib/psdd
-	url = git@github.com:hahaXD/psdd.git 
+	url = git@github.com:hahaXD/psdd.git
+	branch = master 

@@ -9,7 +9,7 @@ extern "C" {
 }
 #include <iostream>
 #include <network.h>
-#include "optionparser.h"
+#include <src/optionparser.h>
 #include "network_compiler.h"
 
 struct Arg : public option::Arg {
