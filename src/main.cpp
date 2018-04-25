@@ -101,6 +101,7 @@ int main(int argc, const char *argv[]) {
     auto result = compiler->Compile();
     auto model_count = psdd_node_util::ModelCount(psdd_node_util::SerializePsddNodes(result.first));
     std::cout << "Model count " << model_count.get_str(10) << std::endl;
+    std::cout << "PSDD size" << psdd_node_util::GetPsddSize(result.first) << std::endl;
     psdd_node_util::WritePsddToFile(result.first, psdd_filename);
     if (options[VTREE_FILENAME]) {
       const char *vtree_filename = options[VTREE_FILENAME].arg;
