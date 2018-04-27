@@ -180,10 +180,13 @@ bool Cluster::CalculateDataCount(BinaryData *data) const {
     }
   }
   bool satisfied = true;
+  uintmax_t total_data = 0;
+  uintmax_t valid_data = 0;
   for (const auto &data_pair : training_data) {
     const auto &cur_data = data_pair.first;
     uintmax_t cur_data_freq = data_pair.second;
     uintmax_t succedent_index = 0;
+    total_data += cur_data_freq;
     if (!parent_clusters_.empty()) {
       auto element_size = succedents_.size();
       succedent_index = (uintmax_t) element_size;
@@ -213,8 +216,9 @@ bool Cluster::CalculateDataCount(BinaryData *data) const {
       continue;
     } else {
       // increment data count
+      valid_data += cur_data_freq;
       std::stack<PsddNode *> explore_list;
-      explore_list.push(succedents_[0]);
+      explore_list.push(succedents_[succedent_index]);
       while (!explore_list.empty()) {
         PsddNode *cur_node = explore_list.top();
         explore_list.pop();
