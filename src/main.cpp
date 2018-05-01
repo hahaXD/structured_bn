@@ -11,6 +11,7 @@ extern "C" {
 #include <network.h>
 #include <src/optionparser.h>
 #include "network_compiler.h"
+#include <cassert>
 
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt, const char *msg2) {
@@ -45,6 +46,7 @@ enum optionIndex {
   CNF_EVID,
   PSDD_FILENAME,
   VTREE_FILENAME,
+  CONSISTENT_CHECK,
 };
 
 const option::Descriptor usage[] =
@@ -60,6 +62,7 @@ const option::Descriptor usage[] =
          "--psdd_filename the output filename for the compiled psdd."},
         {VTREE_FILENAME, 0, "", "vtree_filename", Arg::Required,
          "--vtree_filename the output filename for joint vtree"},
+        {CONSISTENT_CHECK, 0, "", "consistent_check", option::Arg::None, "--consistent_check \tCheck whether learning data is consistent"},
         {UNKNOWN, 0, "", "", option::Arg::None,
          "\nExamples:\n./structured_bn_main --psdd_filename <psdd_filename> --vtree_filename <vtree_filename> network.json\n"},
         {0, 0, 0, 0, 0, 0}
@@ -93,6 +96,20 @@ int main(int argc, const char *argv[]) {
     train_data = BinaryData::ReadSparseDataJsonFile(data_file);
   }else {
       train_data = new BinaryData();
+  }
+  if (options[CONSISTENT_CHECK]){
+      assert(train_data != nullptr);
+      const auto& dataset = train_data->data();
+      std::bitset<MAX_VAR> mask;
+      mask.set();
+      for (const auto& cur_entry : dataset){
+          std::cout <<"Data : " << cur_entry.first << std::endl;
+          if (network->IsModel(mask, cur_entry.first)){
+              std::cout << "is a Model" << std::endl;
+          }else{
+              std::cout << "is not a Model" << std::endl;
+          }
+      }
   }
   network->LearnParametersUsingLaplacianSmoothing(train_data, PsddParameter::CreateFromDecimal(1));
   if (options[PSDD_FILENAME]) {
