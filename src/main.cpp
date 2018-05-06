@@ -10,8 +10,12 @@ extern "C" {
 #include <iostream>
 #include <network.h>
 #include <src/optionparser.h>
-#include "network_compiler.h"
 #include <cassert>
+# include <chrono>
+#include "network_compiler.h"
+using namespace std;
+using ms = chrono::milliseconds;
+using get_time = chrono::steady_clock;
 
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt, const char *msg2) {
@@ -43,10 +47,11 @@ enum optionIndex {
   HELP,
   SPARSE_LEARNING_DATASET_FILE,
   LEARNING_DATASET_FILE,
-  CNF_EVID,
   PSDD_FILENAME,
   VTREE_FILENAME,
   CONSISTENT_CHECK,
+  SAMPLE_PARAMETER,
+  SEED
 };
 
 const option::Descriptor usage[] =
@@ -57,14 +62,18 @@ const option::Descriptor usage[] =
          "--sparse_learning_dataset Set sparse dataset file which is used to learn parameters in the SBN\""},
         {LEARNING_DATASET_FILE, 0, "", "learning_dataset", Arg::Required,
          "--learning_dataset Set dataset file which is used to learn parameters in the SBN"},
-        {CNF_EVID, 0, "", "cnf_evid", Arg::Required, "--cnf_evid  evid file, represented using CNF."},
         {PSDD_FILENAME, 0, "", "psdd_filename", Arg::Required,
          "--psdd_filename the output filename for the compiled psdd."},
         {VTREE_FILENAME, 0, "", "vtree_filename", Arg::Required,
          "--vtree_filename the output filename for joint vtree"},
-        {CONSISTENT_CHECK, 0, "", "consistent_check", option::Arg::None, "--consistent_check \tCheck whether learning data is consistent"},
+        {CONSISTENT_CHECK, 0, "", "consistent_check", option::Arg::None,
+         "--consistent_check \tCheck whether learning data is consistent"},
+        {SAMPLE_PARAMETER, 0, "", "sample_parameter", Arg::Required,
+         "--sample_parameter \t Sample parameter from Gamma distribution"},
+        {SEED, 0, "s", "seed", Arg::Required, "--seed \t Seed to be used. default is 0"},
         {UNKNOWN, 0, "", "", option::Arg::None,
-         "\nExamples:\n./structured_bn_main --psdd_filename <psdd_filename> --vtree_filename <vtree_filename> network.json\n"},
+         "\nExamples:\n./structured_bn_main --psdd_filename <psdd_filename> --vtree_filename <vtree_filename> network.json\n"
+        },
         {0, 0, 0, 0, 0, 0}
     };
 
@@ -84,38 +93,61 @@ int main(int argc, const char *argv[]) {
     return 0;
   }
   const char *network_file = parse.nonOption(0);
-  Network *network = Network::GetNetworkFromSpecFile(network_file);
-  BinaryData *train_data = nullptr;
-  if (options[LEARNING_DATASET_FILE]) {
-    const char *data_file = options[LEARNING_DATASET_FILE].arg;
-    train_data = new BinaryData();
-    train_data->ReadFile(data_file);
-
-  } else if (options[SPARSE_LEARNING_DATASET_FILE]) {
-    const  char* data_file = options[SPARSE_LEARNING_DATASET_FILE].arg;
-    train_data = BinaryData::ReadSparseDataJsonFile(data_file);
-  }else {
-      train_data = new BinaryData();
+  uint seed = 0;
+  if (options[SEED]) {
+    seed = (uint) std::strtol(options[SEED].arg, nullptr, 10);
   }
-  if (options[CONSISTENT_CHECK]){
+  auto start = get_time::now();
+  Network *network = Network::GetNetworkFromSpecFile(network_file);
+  auto end = get_time::now();
+  std::cout << "Network Loading Time : " << chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
+  if (options[SAMPLE_PARAMETER]) {
+    std::cout << "Sample parameters in the network" << std::endl;
+    RandomDoubleGenerator generator = RandomDoubleFromGammaGenerator(1.0, 1.0, seed);
+    network->SampleParameters(&generator);
+  } else {
+    BinaryData *train_data = nullptr;
+    if (options[LEARNING_DATASET_FILE]) {
+      const char *data_file = options[LEARNING_DATASET_FILE].arg;
+      std::cout << "Learning parameters from data file " << data_file << std::endl;
+      train_data = new BinaryData();
+      train_data->ReadFile(data_file);
+
+    } else if (options[SPARSE_LEARNING_DATASET_FILE]) {
+      const char *data_file = options[SPARSE_LEARNING_DATASET_FILE].arg;
+      std::cout << "Learning parameter from sparse data file " << data_file << std::endl;
+      train_data = BinaryData::ReadSparseDataJsonFile(data_file);
+    } else {
+      std::cout << "Learning parameter with 0 data" << std::endl;
+      train_data = new BinaryData();
+    }
+    start = get_time::now();
+    network->LearnParametersUsingLaplacianSmoothing(train_data, PsddParameter::CreateFromDecimal(1));
+    end = get_time::now();
+    std::cout << "Learn Parameter Time : " << chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
+    if (options[CONSISTENT_CHECK]) {
       assert(train_data != nullptr);
-      const auto& dataset = train_data->data();
+      const auto &dataset = train_data->data();
       std::bitset<MAX_VAR> mask;
       mask.set();
-      for (const auto& cur_entry : dataset){
-          std::cout <<"Data : " << cur_entry.first << std::endl;
-          if (network->IsModel(mask, cur_entry.first)){
-              std::cout << "is a Model" << std::endl;
-          }else{
-              std::cout << "is not a Model" << std::endl;
-          }
+      for (const auto &cur_entry : dataset) {
+        std::cout << "Data : " << cur_entry.first << std::endl;
+        if (network->IsModel(mask, cur_entry.first)) {
+          std::cout << "is a Model" << std::endl;
+        } else {
+          std::cout << "is not a Model" << std::endl;
+        }
       }
+    }
+    delete (train_data);
   }
-  network->LearnParametersUsingLaplacianSmoothing(train_data, PsddParameter::CreateFromDecimal(1));
   if (options[PSDD_FILENAME]) {
     const char *psdd_filename = options[PSDD_FILENAME].arg;
+    start = get_time::now();
     NetworkCompiler *compiler = NetworkCompiler::GetDefaultNetworkCompiler(network);
     auto result = compiler->Compile();
+    end = get_time::now();
+    std::cout << "Compile Network Time : " << chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
     auto model_count = psdd_node_util::ModelCount(psdd_node_util::SerializePsddNodes(result.first));
     std::cout << "Model count " << model_count.get_str(10) << std::endl;
     std::cout << "PSDD size" << psdd_node_util::GetPsddSize(result.first) << std::endl;
@@ -127,5 +159,4 @@ int main(int argc, const char *argv[]) {
     delete (compiler);
   }
   delete (network);
-  delete (train_data);
 }

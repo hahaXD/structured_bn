@@ -6,6 +6,7 @@
 #define STRUCTURED_BN_NETWORK_H
 #include <string>
 #include <vector>
+#include <src/random_double_generator.h>
 #include "cluster.h"
 namespace structured_bn {
 class Network {
@@ -18,6 +19,7 @@ class Network {
   const std::vector<Cluster *> &clusters() const;
   Probability CalculateProbability(BinaryData *data) const;
   void LearnParametersUsingLaplacianSmoothing(BinaryData *data, const PsddParameter &alpha);
+  void SampleParameters(RandomDoubleGenerator* generator);
   bool IsModel(const std::bitset<MAX_VAR> &variable_mask, const std::bitset<MAX_VAR> &instantiation) const;
   std::unordered_map<std::string, uint32_t> GetVariableIndexMap() const;
   uint32_t cluster_size() const;

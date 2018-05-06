@@ -287,6 +287,12 @@ Probability Cluster::CalculateProbability(BinaryData* data) const{
   }
   return probability;
 }
+void Cluster::SampleParameters(RandomDoubleGenerator *generator) {
+  uintmax_t new_flag_index = psdd_flag_index_++;
+  std::vector<PsddNode*> sampled_succedents = succedent_manager_->SampleParametersForMultiplePsdds(generator, succedents_, new_flag_index);
+  succedent_manager_->DeleteUnusedPsddNodes(sampled_succedents);
+  succedents_ = sampled_succedents;
+}
 
 }
 

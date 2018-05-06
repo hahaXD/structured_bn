@@ -225,4 +225,9 @@ std::unordered_map<std::string, uint32_t> Network::GetVariableIndexMap() const {
   }
   return variable_index_map;
 }
+void Network::SampleParameters(RandomDoubleGenerator *generator) {
+  for (Cluster * cur_cluster: clusters_){
+    cur_cluster->SampleParameters(generator);
+  }
+}
 }

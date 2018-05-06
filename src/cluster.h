@@ -28,6 +28,7 @@ class Cluster {
   Vtree *antecedent_vtree() const;
   const std::vector<PsddNode *> &succedents() const;
   const std::vector<PsddNode *> &antecedents() const;
+  void SampleParameters(RandomDoubleGenerator* generator);
   void LearnParametersUsingLaplacianSmoothing (BinaryData* data, const PsddParameter& alpha);
   Probability CalculateProbability(BinaryData* data) const;
   bool IsModel(const std::bitset<MAX_VAR>& variable_mask, const std::bitset<MAX_VAR>& instantiation) const;
