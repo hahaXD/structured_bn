@@ -11,11 +11,10 @@ extern "C" {
 #include <network.h>
 #include <src/optionparser.h>
 #include <cassert>
-# include <chrono>
+#include <chrono>
 #include "network_compiler.h"
-using namespace std;
-using ms = chrono::milliseconds;
-using get_time = chrono::steady_clock;
+using ms = std::chrono::milliseconds;
+using get_time = std::chrono::steady_clock;
 
 struct Arg : public option::Arg {
   static void printError(const char *msg1, const option::Option &opt, const char *msg2) {
@@ -68,7 +67,7 @@ const option::Descriptor usage[] =
          "--vtree_filename the output filename for joint vtree"},
         {CONSISTENT_CHECK, 0, "", "consistent_check", option::Arg::None,
          "--consistent_check \tCheck whether learning data is consistent"},
-        {SAMPLE_PARAMETER, 0, "", "sample_parameter", Arg::Required,
+        {SAMPLE_PARAMETER, 0, "", "sample_parameter", option::Arg::None,
          "--sample_parameter \t Sample parameter from Gamma distribution"},
         {SEED, 0, "s", "seed", Arg::Required, "--seed \t Seed to be used. default is 0"},
         {UNKNOWN, 0, "", "", option::Arg::None,
@@ -97,13 +96,14 @@ int main(int argc, const char *argv[]) {
   if (options[SEED]) {
     seed = (uint) std::strtol(options[SEED].arg, nullptr, 10);
   }
+  std::cout << "Loading Network File " << network_file << std::endl;
   auto start = get_time::now();
   Network *network = Network::GetNetworkFromSpecFile(network_file);
   auto end = get_time::now();
-  std::cout << "Network Loading Time : " << chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
+  std::cout << "Network Loading Time : " << std::chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
   if (options[SAMPLE_PARAMETER]) {
     std::cout << "Sample parameters in the network" << std::endl;
-    RandomDoubleGenerator generator = RandomDoubleFromGammaGenerator(1.0, 1.0, seed);
+    RandomDoubleFromGammaGenerator generator(1.0, 1.0, seed);
     network->SampleParameters(&generator);
   } else {
     BinaryData *train_data = nullptr;
@@ -124,7 +124,7 @@ int main(int argc, const char *argv[]) {
     start = get_time::now();
     network->LearnParametersUsingLaplacianSmoothing(train_data, PsddParameter::CreateFromDecimal(1));
     end = get_time::now();
-    std::cout << "Learn Parameter Time : " << chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
+    std::cout << "Learn Parameter Time : " << std::chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
     if (options[CONSISTENT_CHECK]) {
       assert(train_data != nullptr);
       const auto &dataset = train_data->data();
@@ -147,7 +147,7 @@ int main(int argc, const char *argv[]) {
     NetworkCompiler *compiler = NetworkCompiler::GetDefaultNetworkCompiler(network);
     auto result = compiler->Compile();
     end = get_time::now();
-    std::cout << "Compile Network Time : " << chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
+    std::cout << "Compile Network Time : " << std::chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
     auto model_count = psdd_node_util::ModelCount(psdd_node_util::SerializePsddNodes(result.first));
     std::cout << "Model count " << model_count.get_str(10) << std::endl;
     std::cout << "PSDD size" << psdd_node_util::GetPsddSize(result.first) << std::endl;
