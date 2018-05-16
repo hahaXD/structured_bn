@@ -12,6 +12,7 @@ extern "C" {
 #include <src/optionparser.h>
 #include <cassert>
 #include <chrono>
+#include "psdd_learner.h"
 #include "network_compiler.h"
 using ms = std::chrono::milliseconds;
 using get_time = std::chrono::steady_clock;
@@ -50,7 +51,8 @@ enum optionIndex {
   VTREE_FILENAME,
   CONSISTENT_CHECK,
   SAMPLE_PARAMETER,
-  SEED
+  SEED,
+  LEARN_JOINTLY
 };
 
 const option::Descriptor usage[] =
@@ -70,6 +72,7 @@ const option::Descriptor usage[] =
         {SAMPLE_PARAMETER, 0, "", "sample_parameter", option::Arg::None,
          "--sample_parameter \t Sample parameter from Gamma distribution"},
         {SEED, 0, "s", "seed", Arg::Required, "--seed \t Seed to be used. default is 0"},
+        {LEARN_JOINTLY, 0, "j", "learn_jointly", option::Arg::None, "--learn_jointly \t Learn parameters jointly"},
         {UNKNOWN, 0, "", "", option::Arg::None,
          "\nExamples:\n./structured_bn_main --psdd_filename <psdd_filename> --vtree_filename <vtree_filename> network.json\n"
         },
@@ -101,7 +104,41 @@ int main(int argc, const char *argv[]) {
   Network *network = Network::GetNetworkFromSpecFile(network_file);
   auto end = get_time::now();
   std::cout << "Network Loading Time : " << std::chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
-  if (options[SAMPLE_PARAMETER]) {
+  if (options[LEARN_JOINTLY]) {
+    std::cout << "Learn parameters jointly" << std::endl;
+    BinaryData *train_data = nullptr;
+    if (options[LEARNING_DATASET_FILE]) {
+      const char *data_file = options[LEARNING_DATASET_FILE].arg;
+      std::cout << "Learning parameters from data file " << data_file << std::endl;
+      train_data = new BinaryData();
+      train_data->ReadFile(data_file);
+
+    } else if (options[SPARSE_LEARNING_DATASET_FILE]) {
+      const char *data_file = options[SPARSE_LEARNING_DATASET_FILE].arg;
+      std::cout << "Learning parameter from sparse data file " << data_file << std::endl;
+      train_data = BinaryData::ReadSparseDataJsonFile(data_file);
+    } else {
+      std::cout << "Learning parameter with 0 data" << std::endl;
+      train_data = new BinaryData();
+    }
+    NetworkCompiler *compiler = NetworkCompiler::GetDefaultNetworkCompiler(network);
+    auto result = compiler->Compile();
+    PsddNode *symbolic_node = result.first;
+    PsddManager *new_manager = PsddManager::GetPsddManagerFromVtree(compiler->GetVtree());
+    PsddNode *learnt_model = LearnPsdd(symbolic_node, train_data, new_manager, PsddParameter::CreateFromDecimal(1));
+    if (options[PSDD_FILENAME]) {
+      const char *psdd_filename = options[PSDD_FILENAME].arg;
+      psdd_node_util::WritePsddToFile(learnt_model, psdd_filename);
+      if (options[VTREE_FILENAME]) {
+        const char *vtree_filename = options[VTREE_FILENAME].arg;
+        sdd_vtree_save(vtree_filename, compiler->GetVtree());
+      }
+    }
+    delete (compiler);
+    delete (train_data);
+    delete (new_manager);
+    return 0;
+  } else if (options[SAMPLE_PARAMETER]) {
     std::cout << "Sample parameters in the network" << std::endl;
     RandomDoubleFromGammaGenerator generator(1.0, 1.0, seed);
     network->SampleParameters(&generator);
