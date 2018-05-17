@@ -26,12 +26,15 @@ int main(int argc, const char *argv[]) {
   auto google_non_hm_data = new BinaryData();
   google_non_hm_data->set_variable_size((uint32_t) google_data->variable_size());
   auto cab_hm_data = new BinaryData();
-  cab_hm_data->set_variable_size((uint32_t) cab_hm_data->variable_size());
+  cab_hm_data->set_variable_size((uint32_t) cab_data->variable_size());
   auto cab_non_hm_data = new BinaryData();
-  cab_non_hm_data->set_variable_size((uint32_t) cab_non_hm_data->variable_size());
+  cab_non_hm_data->set_variable_size((uint32_t) cab_data->variable_size());
   std::bitset<MAX_VAR> mask;
   mask.set();
+  auto status = 0;
+  std::cout << "Loading google routes " << std::endl;
   for (auto example : google_data->data()){
+    status += example.second;
     if (network->IsModel(mask, example.first)){
       for (auto i = 0; i < example.second; ++i){
         google_hm_data->AddRecord(example.first);
@@ -39,8 +42,12 @@ int main(int argc, const char *argv[]) {
     }else{
       google_non_hm_data->AddRecord(example.first);
     }
+    std::cout << "Status " << status << " / " << google_data->data_size() << std::endl;
   }
+  status = 0;
+  std::cout << "Loading cab routes " << std::endl;
   for (auto example : cab_data->data()){
+    status += example.second;
     if (network->IsModel(mask, example.first)){
       for (auto i = 0; i < example.second; ++i){
         cab_hm_data->AddRecord(example.first);
@@ -48,6 +55,7 @@ int main(int argc, const char *argv[]) {
     }else{
       cab_non_hm_data->AddRecord(example.first);
     }
+    std::cout << "Status " << status << " / " << cab_data->data_size() << std::endl;
   }
   std::string google_hm_data_filename = std::string(google_data_filename)+ "_ok";
   std::string google_non_hm_data_filename = std::string(google_data_filename) + "_bad";
