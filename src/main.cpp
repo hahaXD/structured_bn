@@ -104,6 +104,7 @@ int main(int argc, const char *argv[]) {
   Network *network = Network::GetNetworkFromSpecFile(network_file);
   auto end = get_time::now();
   std::cout << "Network Loading Time : " << std::chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
+  std::cout << "Network Parameter Size " << network->GetParameterCount() << std::endl;
   if (options[LEARN_JOINTLY]) {
     std::cout << "Learn parameters jointly" << std::endl;
     BinaryData *train_data = nullptr;

@@ -230,4 +230,11 @@ void Network::SampleParameters(RandomDoubleGenerator *generator) {
     cur_cluster->SampleParameters(generator);
   }
 }
+uintmax_t Network::GetParameterCount() const {
+  uintmax_t size = 0;
+  for (Cluster* cur_cluster : clusters_){
+    size += cur_cluster->GetParameterCount();
+  }
+  return size;
+}
 }

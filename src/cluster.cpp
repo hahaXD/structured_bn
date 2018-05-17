@@ -294,5 +294,20 @@ void Cluster::SampleParameters(RandomDoubleGenerator *generator) {
   succedents_ = sampled_succedents;
 }
 
+uintmax_t Cluster::GetParameterCount() const {
+  std::vector<PsddNode*> serialized_succedents = psdd_node_util::SerializePsddNodes(succedents_);
+  uintmax_t size = 0;
+  for (PsddNode* cur_node : serialized_succedents){
+    if (cur_node->node_type() == LITERAL_NODE_TYPE){
+      continue;
+    }else if (cur_node->node_type() == DECISION_NODE_TYPE){
+      size += cur_node->psdd_decision_node()->primes().size() - 1;
+    }else {
+      size += 1;
+    }
+  }
+  return size;
+}
+
 }
 
