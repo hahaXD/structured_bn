@@ -72,7 +72,8 @@ PsddNode *LearnPsdd(PsddNode *root_node, BinaryData *data, PsddManager *manager,
   for (auto it = serialized_nodes.rbegin(); it != serialized_nodes.rend(); ++it) {
     PsddNode *cur_node = *it;
     if (cur_node->node_type() == LITERAL_NODE_TYPE) {
-      cur_node->SetUserData((uintmax_t) cur_node);
+      auto new_literal_node = manager->GetPsddLiteralNode(cur_node->psdd_literal_node()->literal(), cur_node->flag_index());
+      cur_node->SetUserData((uintmax_t) new_literal_node);
     } else if (cur_node->node_type() == TOP_NODE_TYPE) {
       PsddTopNode *cur_top_node = cur_node->psdd_top_node();
       auto positive_data_count = cur_top_node->true_data_count();

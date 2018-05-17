@@ -126,6 +126,7 @@ int main(int argc, const char *argv[]) {
     PsddNode *symbolic_node = result.first;
     PsddManager *new_manager = PsddManager::GetPsddManagerFromVtree(compiler->GetVtree());
     PsddNode *learnt_model = LearnPsdd(symbolic_node, train_data, new_manager, PsddParameter::CreateFromDecimal(1));
+    std::cout << "PSDD size " << psdd_node_util::GetPsddSize(learnt_model) << std::endl;
     if (options[PSDD_FILENAME]) {
       const char *psdd_filename = options[PSDD_FILENAME].arg;
       psdd_node_util::WritePsddToFile(learnt_model, psdd_filename);
@@ -187,7 +188,7 @@ int main(int argc, const char *argv[]) {
     std::cout << "Compile Network Time : " << std::chrono::duration_cast<ms>(end - start).count() << " ms" << std::endl;
     auto model_count = psdd_node_util::ModelCount(psdd_node_util::SerializePsddNodes(result.first));
     std::cout << "Model count " << model_count.get_str(10) << std::endl;
-    std::cout << "PSDD size" << psdd_node_util::GetPsddSize(result.first) << std::endl;
+    std::cout << "PSDD size " << psdd_node_util::GetPsddSize(result.first) << std::endl;
     psdd_node_util::WritePsddToFile(result.first, psdd_filename);
     if (options[VTREE_FILENAME]) {
       const char *vtree_filename = options[VTREE_FILENAME].arg;
