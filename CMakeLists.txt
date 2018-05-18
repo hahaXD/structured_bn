@@ -18,5 +18,5 @@ target_link_libraries(structured_bn_test structured_bn psdd  gtest gtest_main ps
 target_link_libraries(structured_bn psdd sdd nlohmann_json gmp)
 target_link_libraries(structured_bn_main structured_bn psdd sdd nlohmann_json gmp)
 target_link_libraries(split_data structured_bn psdd sdd nlohmann_json gmp)
-target_link_libraries(snb_classifier structured_bn psdd sdd nlohmann_json gmp)
+target_link_libraries(snb_classifier structured_bn psdd sdd nlohmann_json gmp pthread)
 target_link_libraries(sbn_param_count structured_bn psdd sdd nlohmann_json gmp)
