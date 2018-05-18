@@ -52,13 +52,20 @@ int main(int argc, const char *argv[]) {
   uintmax_t wrong_google = 0;
   uintmax_t wrong_cab = 0;
   for (auto i = 0; i < google_test_data.size(); i += batch_size) {
+    /*
     BinaryData cur_data;
     cur_data.set_variable_size(google_testing_data->variable_size());
     for (auto j = i; j < i + batch_size; ++j) {
       cur_data.AddRecord(google_test_data[j]);
     }
     Probability google_ll = google_network->CalculateProbability(&cur_data);
-    Probability cab_ll = cab_network->CalculateProbability(&cur_data);
+    Probability cab_ll = cab_network->CalculateProbability(&cur_data);*/
+    Probability google_ll = Probability::CreateFromDecimal(1);
+    Probability cab_ll = Probability::CreateFromDecimal(1);
+    for (auto j = i ; j < i + batch_size; ++ j){
+      google_ll = google_ll + google_network->EvaluateCompleteInstantiation(google_test_data[j]);
+      cab_ll = cab_ll + cab_network->EvaluateCompleteInstantiation(google_test_data[j]);
+    }
     if (google_ll > cab_ll) {
       accurate += 1;
     } else {
@@ -70,13 +77,20 @@ int main(int argc, const char *argv[]) {
   }
 
   for (auto i = 0; i < cab_test_data.size(); i += batch_size) {
+    /*
     BinaryData cur_data;
     cur_data.set_variable_size(google_testing_data->variable_size());
     for (auto j = i; j < i + batch_size; ++j) {
       cur_data.AddRecord(cab_test_data[j]);
     }
     Probability google_ll = google_network->CalculateProbability(&cur_data);
-    Probability cab_ll = cab_network->CalculateProbability(&cur_data);
+    Probability cab_ll = cab_network->CalculateProbability(&cur_data);*/
+    Probability google_ll = Probability::CreateFromDecimal(1);
+    Probability cab_ll = Probability::CreateFromDecimal(1);
+    for (auto j = i ; j < i + batch_size; ++ j){
+      google_ll = google_ll + google_network->EvaluateCompleteInstantiation(cab_test_data[j]);
+      cab_ll = cab_ll + cab_network->EvaluateCompleteInstantiation(cab_test_data[j]);
+    }
     if (google_ll < cab_ll) {
       accurate += 1;
     } else {
