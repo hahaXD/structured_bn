@@ -92,7 +92,7 @@ void SingleThread(Network *google_network, Network *cab_network,
 int main(int argc, const char *argv[]) {
   const char *google_training_filename = argv[1];
   const char *google_testing_filename = argv[2];
-  const char *cab_training_filename = argv[3]
+  const char *cab_training_filename = argv[3];
   const char *cab_testing_filename = argv[4];
   const char *sbn_filename = argv[5];
   int min_batch_size = atoi(argv[6]);
