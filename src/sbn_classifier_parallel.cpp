@@ -57,6 +57,7 @@ void SingleThread(Network *google_network, Network *cab_network,
                   uintmax_t batch_size,
                   size_t offset,
                   size_t data_size, SafeQueue<EvalResult> *safe_queue) {
+  std::cout << " Batch size " << batch_size << " offset " << offset << " data size " << data_size << std::endl;
   uintmax_t google_total = 0;
   uintmax_t google_correct = 0;
   for (auto i = offset; i < offset + data_size; i += batch_size) {
