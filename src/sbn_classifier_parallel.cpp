@@ -57,7 +57,6 @@ void SingleThread(Network *google_network, Network *cab_network,
                   uintmax_t batch_size,
                   size_t offset,
                   size_t data_size, SafeQueue<EvalResult> *safe_queue) {
-  std::cout << " Batch size " << batch_size << " offset " << offset << " data size " << data_size << std::endl;
   uintmax_t google_total = 0;
   uintmax_t google_correct = 0;
   for (auto i = offset; i < offset + data_size; i += batch_size) {
@@ -90,6 +89,23 @@ void SingleThread(Network *google_network, Network *cab_network,
   }
   safe_queue->push(new EvalResult(google_correct, google_total, cab_correct, cab_total));
 }
+struct NetworkConstruct {
+  NetworkConstruct(Network *a, Network *b) : google(a), cab(b) {}
+  Network *google;
+  Network *cab;
+};
+void NetworkConstructThread(const char *google_training_filename,
+                            const char *cab_training_filename,
+                            const char *sbn_filename,
+                            SafeQueue<NetworkConstruct> *safe_queue) {
+  BinaryData *google_training_data = BinaryData::ReadSparseDataJsonFile(google_training_filename);
+  BinaryData *cab_training_data = BinaryData::ReadSparseDataJsonFile(cab_training_filename);
+  Network *google_network = Network::GetNetworkFromSpecFile(sbn_filename);
+  google_network->LearnParametersUsingLaplacianSmoothing(google_training_data, PsddParameter::CreateFromDecimal(1));
+  Network *cab_network = Network::GetNetworkFromSpecFile(sbn_filename);
+  cab_network->LearnParametersUsingLaplacianSmoothing(cab_training_data, PsddParameter::CreateFromDecimal(1));
+  safe_queue->push(new NetworkConstruct(google_network, cab_network));
+}
 int main(int argc, const char *argv[]) {
   const char *google_training_filename = argv[1];
   const char *google_testing_filename = argv[2];
@@ -99,12 +115,27 @@ int main(int argc, const char *argv[]) {
   int min_batch_size = atoi(argv[6]);
   int max_batch_size = atoi(argv[7]);
   int cores = 1 << atoi(argv[8]);
-  BinaryData *google_training_data = BinaryData::ReadSparseDataJsonFile(google_training_filename);
-  BinaryData *cab_training_data = BinaryData::ReadSparseDataJsonFile(cab_training_filename);
-  Network *google_network = Network::GetNetworkFromSpecFile(sbn_filename);
-  google_network->LearnParametersUsingLaplacianSmoothing(google_training_data, PsddParameter::CreateFromDecimal(1));
-  Network *cab_network = Network::GetNetworkFromSpecFile(sbn_filename);
-  cab_network->LearnParametersUsingLaplacianSmoothing(cab_training_data, PsddParameter::CreateFromDecimal(1));
+  std::vector<std::thread> works;
+  SafeQueue<NetworkConstruct> network_queue;
+  for (auto i = 0; i < cores; ++i) {
+    works.emplace_back(std::thread(NetworkConstructThread,
+                                   google_training_filename,
+                                   cab_training_filename,
+                                   sbn_filename,
+                                   &network_queue));
+  }
+  for (auto i = 0; i < cores; ++i) {
+    works[i].join();
+  }
+  std::vector<Network *> google_networks;
+  std::vector<Network *> cab_networks;
+  NetworkConstruct *cur_network = network_queue.next();
+  while (cur_network) {
+    google_networks.push_back(cur_network->google);
+    cab_networks.push_back(cur_network->cab);
+    delete (cur_network);
+    cur_network = network_queue.next();
+  }
   BinaryData *google_testing_data = BinaryData::ReadSparseDataJsonFile(google_testing_filename);
   BinaryData *cab_testing_data = BinaryData::ReadSparseDataJsonFile(cab_testing_filename);
   std::vector<std::bitset<MAX_VAR>> google_test_data;
@@ -128,8 +159,8 @@ int main(int argc, const char *argv[]) {
     SafeQueue<EvalResult> result;
     for (auto j = 0; j < cores; ++j) {
       threads.emplace_back(std::thread(SingleThread,
-                                       google_network,
-                                       cab_network,
+                                       google_networks[j],
+                                       cab_networks[j],
                                        &google_test_data,
                                        &cab_test_data,
                                        batch_size,
@@ -160,3 +191,11 @@ int main(int argc, const char *argv[]) {
               << std::endl;
   }
 }
+/*
+  //BinaryData *google_training_data = BinaryData::ReadSparseDataJsonFile(google_training_filename);
+  //BinaryData *cab_training_data = BinaryData::ReadSparseDataJsonFile(cab_training_filename);
+  //Network *google_network = Network::GetNetworkFromSpecFile(sbn_filename);
+  //google_network->LearnParametersUsingLaplacianSmoothing(google_training_data, PsddParameter::CreateFromDecimal(1));
+  //Network *cab_network = Network::GetNetworkFromSpecFile(sbn_filename);
+  //cab_network->LearnParametersUsingLaplacianSmoothing(cab_training_data, PsddParameter::CreateFromDecimal(1));
+  */
