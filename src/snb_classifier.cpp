@@ -63,8 +63,8 @@ int main(int argc, const char *argv[]) {
     Probability google_ll = Probability::CreateFromDecimal(1);
     Probability cab_ll = Probability::CreateFromDecimal(1);
     for (auto j = i; j < i + batch_size; ++j) {
-      google_ll = google_ll + google_network->EvaluateCompleteInstantiation(google_test_data[j]);
-      cab_ll = cab_ll + cab_network->EvaluateCompleteInstantiation(google_test_data[j]);
+      google_ll = google_ll * google_network->EvaluateCompleteInstantiation(google_test_data[j]);
+      cab_ll = cab_ll * cab_network->EvaluateCompleteInstantiation(google_test_data[j]);
     }
     if (google_ll > cab_ll) {
       accurate += 1;
@@ -89,8 +89,8 @@ int main(int argc, const char *argv[]) {
     Probability google_ll = Probability::CreateFromDecimal(1);
     Probability cab_ll = Probability::CreateFromDecimal(1);
     for (auto j = i; j < i + batch_size; ++j) {
-      google_ll = google_ll + google_network->EvaluateCompleteInstantiation(cab_test_data[j]);
-      cab_ll = cab_ll + cab_network->EvaluateCompleteInstantiation(cab_test_data[j]);
+      google_ll = google_ll * google_network->EvaluateCompleteInstantiation(cab_test_data[j]);
+      cab_ll = cab_ll * cab_network->EvaluateCompleteInstantiation(cab_test_data[j]);
     }
     if (google_ll < cab_ll) {
       accurate += 1;
