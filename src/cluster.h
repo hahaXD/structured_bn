@@ -33,6 +33,7 @@ class Cluster {
   Probability CalculateProbability(BinaryData* data) const;
   bool IsModel(const std::bitset<MAX_VAR>& variable_mask, const std::bitset<MAX_VAR>& instantiation) const;
   uintmax_t GetParameterCount() const;
+  Probability EvaluateCompleteInstantiation(const std::bitset<MAX_VAR>& instantiation);
  private:
   Cluster(uint32_t cluster_index,
           const std::vector<Cluster *> &parent_clusters,

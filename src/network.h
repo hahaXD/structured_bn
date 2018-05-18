@@ -26,6 +26,7 @@ class Network {
   uintmax_t GetParameterCount () const;
   const std::vector<std::string>& variable_names() const;
   const std::vector<std::string>& cluster_names() const;
+  Probability EvaluateCompleteInstantiation(const std::bitset<MAX_VAR>& instantiation);
  private:
   Network(std::vector<std::string> variable_names,
           std::vector<Cluster *> clusters,

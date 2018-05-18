@@ -68,9 +68,9 @@ Cluster *Cluster::GetClusterFromLocalConstraint(uint32_t cluster_index,
                      succedent_psdds,
                      flag_index);
 }
-Cluster::~Cluster(){
-  delete(antecedent_manager_);
-  delete(succedent_manager_);
+Cluster::~Cluster() {
+  delete (antecedent_manager_);
+  delete (succedent_manager_);
 }
 uint32_t Cluster::cluster_index() const {
   return cluster_index_;
@@ -103,7 +103,7 @@ const std::vector<PsddNode *> &Cluster::succedents() const {
 const std::vector<PsddNode *> &Cluster::antecedents() const {
   return antecedents_;
 }
-void Cluster::LearnParametersUsingLaplacianSmoothing(BinaryData *data, const PsddParameter& alpha) {
+void Cluster::LearnParametersUsingLaplacianSmoothing(BinaryData *data, const PsddParameter &alpha) {
   const auto &data_map = data->data();
   CalculateDataCount(data);
   std::vector<PsddNode *> new_succedents;
@@ -275,38 +275,56 @@ bool Cluster::IsModel(const std::bitset<MAX_VAR> &variable_mask,
     return false;
   }
 }
-Probability Cluster::CalculateProbability(BinaryData* data) const{
+Probability Cluster::CalculateProbability(BinaryData *data) const {
   bool satisfied = CalculateDataCount(data);
-  if (!satisfied){
+  if (!satisfied) {
     return Probability::CreateFromDecimal(0);
   }
-  std::vector<PsddNode*> serialized_succedents = psdd_node_util::SerializePsddNodes(succedents_);
+  std::vector<PsddNode *> serialized_succedents = psdd_node_util::SerializePsddNodes(succedents_);
   Probability probability = Probability::CreateFromDecimal(1);
-  for (PsddNode* cur_node : serialized_succedents){
+  for (PsddNode *cur_node : serialized_succedents) {
     probability = probability * cur_node->CalculateLocalProbability();
   }
   return probability;
 }
 void Cluster::SampleParameters(RandomDoubleGenerator *generator) {
   uintmax_t new_flag_index = psdd_flag_index_++;
-  std::vector<PsddNode*> sampled_succedents = succedent_manager_->SampleParametersForMultiplePsdds(generator, succedents_, new_flag_index);
+  std::vector<PsddNode *>
+      sampled_succedents = succedent_manager_->SampleParametersForMultiplePsdds(generator, succedents_, new_flag_index);
   succedent_manager_->DeleteUnusedPsddNodes(sampled_succedents);
   succedents_ = sampled_succedents;
 }
 
 uintmax_t Cluster::GetParameterCount() const {
-  std::vector<PsddNode*> serialized_succedents = psdd_node_util::SerializePsddNodes(succedents_);
+  std::vector<PsddNode *> serialized_succedents = psdd_node_util::SerializePsddNodes(succedents_);
   uintmax_t size = 0;
-  for (PsddNode* cur_node : serialized_succedents){
-    if (cur_node->node_type() == LITERAL_NODE_TYPE){
+  for (PsddNode *cur_node : serialized_succedents) {
+    if (cur_node->node_type() == LITERAL_NODE_TYPE) {
       continue;
-    }else if (cur_node->node_type() == DECISION_NODE_TYPE){
+    } else if (cur_node->node_type() == DECISION_NODE_TYPE) {
       size += cur_node->psdd_decision_node()->primes().size() - 1;
-    }else {
+    } else {
       size += 1;
     }
   }
   return size;
+}
+Probability Cluster::EvaluateCompleteInstantiation(const std::bitset<MAX_VAR> &instantiation) {
+  std::bitset<MAX_VAR> variable_mask;
+  variable_mask.set();
+  if (parent_clusters_.empty()) {
+    return psdd_node_util::Evaluate(variable_mask, instantiation, succedents_[0]);
+  } else {
+    auto condition_size = antecedents_.size();
+    for (auto i = 0; i < condition_size; ++i) {
+      PsddNode *cur_antecedent = antecedents_[i];
+      PsddNode *cur_succedent = succedents_[i];
+      if (psdd_node_util::IsConsistent(cur_antecedent, variable_mask, instantiation)){
+        return psdd_node_util::Evaluate(variable_mask, instantiation, cur_succedent);
+      }
+    }
+    return Probability::CreateFromDecimal(0);
+  }
 }
 
 }

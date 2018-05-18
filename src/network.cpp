@@ -237,4 +237,11 @@ uintmax_t Network::GetParameterCount() const {
   }
   return size;
 }
+Probability Network::EvaluateCompleteInstantiation(const std::bitset<MAX_VAR> &instantiation) {
+  Probability total_prob = Probability::CreateFromDecimal(1);
+  for (Cluster* cur_cluster : clusters_){
+    total_prob = total_prob * cur_cluster->EvaluateCompleteInstantiation(instantiation);
+  }
+  return total_prob;
+}
 }
