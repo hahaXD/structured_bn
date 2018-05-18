@@ -62,7 +62,7 @@ int main(int argc, const char *argv[]) {
     Probability cab_ll = cab_network->CalculateProbability(&cur_data);*/
     Probability google_ll = Probability::CreateFromDecimal(1);
     Probability cab_ll = Probability::CreateFromDecimal(1);
-    for (auto j = i ; j < i + batch_size; ++ j){
+    for (auto j = i; j < i + batch_size; ++j) {
       google_ll = google_ll + google_network->EvaluateCompleteInstantiation(google_test_data[j]);
       cab_ll = cab_ll + cab_network->EvaluateCompleteInstantiation(google_test_data[j]);
     }
@@ -72,7 +72,8 @@ int main(int argc, const char *argv[]) {
       wrong_google += 1;
     }
     total += 1;
-    std::cout << "Correct : " << accurate << " Wrong Google : " << wrong_google << " Wrong Cab : " << wrong_cab
+    std::cout << "LL Diff: " << (google_ll / cab_ll).parameter() << " Correct : " << accurate << " Wrong Google : "
+              << wrong_google << " Wrong Cab : " << wrong_cab
               << " Total : " << total << std::endl;
   }
 
@@ -87,7 +88,7 @@ int main(int argc, const char *argv[]) {
     Probability cab_ll = cab_network->CalculateProbability(&cur_data);*/
     Probability google_ll = Probability::CreateFromDecimal(1);
     Probability cab_ll = Probability::CreateFromDecimal(1);
-    for (auto j = i ; j < i + batch_size; ++ j){
+    for (auto j = i; j < i + batch_size; ++j) {
       google_ll = google_ll + google_network->EvaluateCompleteInstantiation(cab_test_data[j]);
       cab_ll = cab_ll + cab_network->EvaluateCompleteInstantiation(cab_test_data[j]);
     }
@@ -97,7 +98,8 @@ int main(int argc, const char *argv[]) {
       wrong_cab += 1;
     }
     total += 1;
-    std::cout << "Correct : " << accurate << " Wrong Google : " << wrong_google << " Wrong Cab : " << wrong_cab
+    std::cout << "LL Diff: " << (google_ll / cab_ll).parameter() << "Correct : " << accurate << " Wrong Google : "
+              << wrong_google << " Wrong Cab : " << wrong_cab
               << " Total : " << total << std::endl;
   }
   std::cout << "Final Result : " << "Correct : " << accurate << " Wrong Google : " << wrong_google << " Wrong Cab : "
