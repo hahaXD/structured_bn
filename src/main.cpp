@@ -56,8 +56,7 @@ enum optionIndex {
   CONSISTENT_CHECK,
   SAMPLE_PARAMETER,
   SEED,
-  LEARN_JOINTLY,
-  TEST_FILENAME
+  LEARN_JOINTLY
 };
 
 const option::Descriptor usage[] =
@@ -78,7 +77,6 @@ const option::Descriptor usage[] =
          "--sample_parameter \t Sample parameter from Gamma distribution"},
         {SEED, 0, "s", "seed", Arg::Required, "--seed \t Seed to be used. default is 0"},
         {LEARN_JOINTLY, 0, "j", "learn_jointly", option::Arg::None, "--learn_jointly \t Learn parameters jointly"},
-        {TEST_FILENAME, 0, "", "test_filename", Arg::Required, "--test_filename the nips test format"},
         {UNKNOWN, 0, "", "", option::Arg::None,
          "\nExamples:\n./structured_bn_main --psdd_filename <psdd_filename> --vtree_filename <vtree_filename> network.json\n"
         },
@@ -185,33 +183,6 @@ int main(int argc, const char *argv[]) {
       }
     }
     delete (train_data);
-  }
-  if (options[TEST_FILENAME]) {
-    const char *test_filename = options[TEST_FILENAME].arg;
-    std::ifstream data_input_stream(test_filename);
-    json data_input_json;
-    data_input_stream >> data_input_json;
-    std::vector<PsddParameter> result;
-    const auto &data_list = data_input_json["data"];
-    const auto &variable_size = data_input_json["variable_size"];
-    assert(data_list.is_array());
-    for (const auto &cur_example : data_list) {
-      std::bitset<MAX_VAR> example;
-      for (const auto &cur_variable : cur_example) {
-        example.set(cur_variable);
-      }
-      BinaryData data;
-      data.set_variable_size(variable_size);
-      data.AddRecord(example);
-      PsddParameter cur_prob = network->CalculateProbability(&data);
-      result.push_back(cur_prob);
-    }
-    std::cout << "Test Result : ";
-    for (PsddParameter cur_param : result) {
-      std::cout << cur_param.parameter() << " ";
-    }
-    std::cout << std::endl;
-    data_input_stream.close();
   }
   if (options[PSDD_FILENAME]) {
     const char *psdd_filename = options[PSDD_FILENAME].arg;
