@@ -2,8 +2,8 @@
 // Created by Yujia Shen on 4/6/18.
 //
 
-#include "network.h"
-#include <json.hpp>
+#include <structured_bn/network.h>
+#include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
 

@@ -6,7 +6,7 @@
 #define STRUCTURED_BN_NETWORK_H
 #include <string>
 #include <vector>
-#include <src/random_double_generator.h>
+#include <psdd/random_double_generator.h>
 #include "cluster.h"
 namespace structured_bn {
 class Network {

@@ -4,7 +4,7 @@
 
 #ifndef STRUCTURED_BN_NETWORK_COMPILER_H
 #define STRUCTURED_BN_NETWORK_COMPILER_H
-#include "network.h"
+#include <structured_bn/network.h>
 namespace structured_bn {
 class NetworkCompiler {
  public:

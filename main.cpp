@@ -5,14 +5,14 @@
 // Created by Yujia Shen on 3/20/18.
 //
 extern "C" {
-#include <sddapi.h>
+#include <sdd/sddapi.h>
 }
 #include <iostream>
-#include <network.h>
-#include <src/optionparser.h>
+#include <structured_bn/network.h>
+#include <util/optionparser.h>
 #include <cassert>
 #include <chrono>
-#include "network_compiler.h"
+#include <structured_bn/network_compiler.h>
 using ms = std::chrono::milliseconds;
 using get_time = std::chrono::steady_clock;
 

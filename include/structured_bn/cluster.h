@@ -4,10 +4,10 @@
 
 #ifndef PROJECT_CLUSTER_H
 #define PROJECT_CLUSTER_H
-#include <src/psdd_node.h>
-#include <src/psdd_manager.h>
+#include <psdd/psdd_node.h>
+#include <psdd/psdd_manager.h>
 extern "C" {
-#include <sddapi.h>
+#include <sdd/sddapi.h>
 };
 
 namespace structured_bn {
