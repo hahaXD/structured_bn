@@ -7,7 +7,7 @@
 #include <vector>
 #include <queue>
 #include <iostream>
-#include "network_compiler.h"
+#include <structured_bn/network_compiler.h>
 namespace {
 using structured_bn::Cluster;
 PsddNode *RecoverPsdd(PsddNode *before_recovery,

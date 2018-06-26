@@ -4,13 +4,13 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <cluster.h>
-#include <network_compiler.h>
-#include <network.h>
+#include <structured_bn/cluster.h>
+#include <structured_bn/network_compiler.h>
+#include <structured_bn/network.h>
 extern "C" {
-#include <sddapi.h>
+#include <sdd/sddapi.h>
 }
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <fstream>
 using structured_bn::Network;
 using structured_bn::Cluster;

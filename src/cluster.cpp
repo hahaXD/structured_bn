@@ -4,7 +4,7 @@
 
 #include <cassert>
 #include <stack>
-#include "cluster.h"
+#include <structured_bn/cluster.h>
 
 namespace structured_bn {
 Cluster *Cluster::GetClusterFromLocalConstraint(uint32_t cluster_index,
