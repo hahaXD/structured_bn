@@ -3,9 +3,10 @@
 //
 
 #include <structured_bn/network.h>
-#include <nlohmann/json.hpp>
+
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 using nlohmann::json;
 namespace structured_bn {
@@ -20,16 +21,17 @@ std::vector<Cluster *> Network::ArbitraryTopologicalOrder() const {
   std::vector<Cluster *> sorted_clusters;
   uint32_t cluster_size = this->cluster_size();
   while (sorted_clusters.size() < cluster_size) {
-    std::vector<Cluster *> root_clusters = RootClustersAfterCondition(sorted_clusters);
-    sorted_clusters.insert(sorted_clusters.end(), root_clusters.begin(), root_clusters.end());
+    std::vector<Cluster *> root_clusters =
+        RootClustersAfterCondition(sorted_clusters);
+    sorted_clusters.insert(sorted_clusters.end(), root_clusters.begin(),
+                           root_clusters.end());
   }
   return sorted_clusters;
 }
 
-uint32_t Network::cluster_size() const {
-  return (uint32_t) clusters_.size();
-}
-std::vector<Cluster *> Network::RootClustersAfterCondition(const std::vector<Cluster *> &clusters_conditioned) const {
+uint32_t Network::cluster_size() const { return (uint32_t)clusters_.size(); }
+std::vector<Cluster *> Network::RootClustersAfterCondition(
+    const std::vector<Cluster *> &clusters_conditioned) const {
   std::vector<Cluster *> roots;
   std::bitset<MAX_VAR> cluster_indicators;
   for (Cluster *conditioned_cluster : clusters_conditioned) {
@@ -53,9 +55,7 @@ std::vector<Cluster *> Network::RootClustersAfterCondition(const std::vector<Clu
   }
   return roots;
 }
-const std::vector<Cluster *> &Network::clusters() const {
-  return clusters_;
-}
+const std::vector<Cluster *> &Network::clusters() const { return clusters_; }
 Network *Network::GetNetworkFromSpecFile(const char *filename) {
   std::ifstream spec_file(filename);
   json network_spec;
@@ -74,7 +74,8 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
   variable_names.emplace_back("");
   for (auto i = 0; i < variable_size; i++) {
     variable_names.push_back(variables[i]);
-    variable_network_index_lookup[variables[i]] = (uint32_t) i + 1;
+    variable_network_index_lookup[variables[i]] = (uint32_t)i + 1;
+    std::cout << variable_names.back() << std::endl;
   }
   // update cluster name with the corresponding index
   std::unordered_set<uint32_t> unprocessed_cluster_indexes;
@@ -84,13 +85,14 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
     assert(cur_cluster_spec.find("cluster_name") != cur_cluster_spec.end());
     std::string cluster_name = cur_cluster_spec["cluster_name"];
     cluster_names.emplace_back(cluster_name);
-    cluster_names_lookup[cluster_names.back()] = (uint32_t) cluster_index;
-    unprocessed_cluster_indexes.insert((uint32_t) (cluster_index));
+    cluster_names_lookup[cluster_names.back()] = (uint32_t)cluster_index;
+    unprocessed_cluster_indexes.insert((uint32_t)(cluster_index));
   }
   std::unordered_set<uint32_t> processed_cluster_indexes;
   while (!unprocessed_cluster_indexes.empty()) {
     auto unprocessed_cluster_indexes_it = unprocessed_cluster_indexes.begin();
-    while (unprocessed_cluster_indexes_it != unprocessed_cluster_indexes.end()) {
+    while (unprocessed_cluster_indexes_it !=
+           unprocessed_cluster_indexes.end()) {
       uint32_t cur_cluster_index = *unprocessed_cluster_indexes_it;
       const auto &cur_cluster_info = clusters[cur_cluster_index];
       assert(cur_cluster_info.find("parents") != cur_cluster_info.end());
@@ -99,14 +101,17 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
       for (const auto &parent_name_json : cur_cluster_parents) {
         std::string parent_name = parent_name_json;
         uint32_t parent_index = cluster_names_lookup[parent_name];
-        if (processed_cluster_indexes.find(parent_index) == processed_cluster_indexes.end()) {
+        if (processed_cluster_indexes.find(parent_index) ==
+            processed_cluster_indexes.end()) {
           parent_processed = false;
           break;
         }
       }
       if (parent_processed) {
-        std::cout << "Constructing cluster " << cur_cluster_info["cluster_name"] << std::endl;
-        unprocessed_cluster_indexes_it = unprocessed_cluster_indexes.erase(unprocessed_cluster_indexes_it);
+        std::cout << "Constructing cluster " << cur_cluster_info["cluster_name"]
+                  << std::endl;
+        unprocessed_cluster_indexes_it =
+            unprocessed_cluster_indexes.erase(unprocessed_cluster_indexes_it);
         processed_cluster_indexes.insert(cur_cluster_index);
         std::string antecedent_vtree_filename;
         std::vector<std::string> antecedent_sdd_filenames;
@@ -127,7 +132,7 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
         const auto &constraint = cur_cluster_info["constraint"];
         if (!parent_clusters.empty()) {
           assert(constraint.find("if_vtree") != constraint.end());
-          antecedent_vtree_filename = constraint["if_vtree"];
+          antecedent_vtree_filename = constraint["if_vtree"].get<std::string>();
           assert(constraint.find("if") != constraint.end());
           const auto &if_json = constraint["if"];
           for (const auto &if_sdd : if_json) {
@@ -136,20 +141,23 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
           }
           assert(constraint.find("if_variable_mapping") != constraint.end());
           const auto &if_variable_mapping = constraint["if_variable_mapping"];
-          for (auto variable_mapping_it = if_variable_mapping.begin(); variable_mapping_it != if_variable_mapping.end();
+          for (auto variable_mapping_it = if_variable_mapping.begin();
+               variable_mapping_it != if_variable_mapping.end();
                ++variable_mapping_it) {
             std::string cur_varaible_name = variable_mapping_it.key();
             uint32_t sdd_variable_index = variable_mapping_it.value();
-            assert(variable_network_index_lookup.find(cur_varaible_name) != variable_network_index_lookup.end());
-            uint32_t psdd_variable_index = variable_network_index_lookup[cur_varaible_name];
+            assert(variable_network_index_lookup.find(cur_varaible_name) !=
+                   variable_network_index_lookup.end());
+            uint32_t psdd_variable_index =
+                variable_network_index_lookup[cur_varaible_name];
             antecedent_variable_map[sdd_variable_index] = psdd_variable_index;
           }
         }
         assert(constraint.find("then_vtree") != constraint.end());
-        succedent_vtree_filename = constraint["then_vtree"];
+        succedent_vtree_filename = constraint["then_vtree"].get<std::string>();
         assert(constraint.find("then") != constraint.end());
         const auto &then_json = constraint["then"];
-        for (const auto &then_sdd: then_json) {
+        for (const auto &then_sdd : then_json) {
           std::string then_filename = then_sdd;
           succedent_sdd_filenames.push_back(then_filename);
         }
@@ -160,18 +168,18 @@ Network *Network::GetNetworkFromSpecFile(const char *filename) {
              ++variable_mapping_it) {
           std::string cur_varaible_name = variable_mapping_it.key();
           uint32_t sdd_variable_index = variable_mapping_it.value();
-          assert(variable_network_index_lookup.find(cur_varaible_name) != variable_network_index_lookup.end());
-          uint32_t psdd_variable_index = variable_network_index_lookup[cur_varaible_name];
+          std::cout << cur_varaible_name << std::endl;
+          assert(variable_network_index_lookup.find(cur_varaible_name) !=
+                 variable_network_index_lookup.end());
+          uint32_t psdd_variable_index =
+              variable_network_index_lookup[cur_varaible_name];
           succedent_variable_map[sdd_variable_index] = psdd_variable_index;
         }
-        Cluster *cur_cluster = Cluster::GetClusterFromLocalConstraint(cur_cluster_index,
-                                                                      parent_clusters,
-                                                                      antecedent_vtree_filename,
-                                                                      antecedent_sdd_filenames,
-                                                                      antecedent_variable_map,
-                                                                      succedent_vtree_filename,
-                                                                      succedent_sdd_filenames,
-                                                                      succedent_variable_map);
+        Cluster *cur_cluster = Cluster::GetClusterFromLocalConstraint(
+            cur_cluster_index, parent_clusters, antecedent_vtree_filename,
+            antecedent_sdd_filenames, antecedent_variable_map,
+            succedent_vtree_filename, succedent_sdd_filenames,
+            succedent_variable_map);
         network_clusters[cur_cluster_index] = cur_cluster;
       } else {
         unprocessed_cluster_indexes_it++;
@@ -189,7 +197,8 @@ Network::~Network() {
     delete (cur_cluster);
   }
 }
-void Network::LearnParametersUsingLaplacianSmoothing(BinaryData *data, const PsddParameter &alpha) {
+void Network::LearnParametersUsingLaplacianSmoothing(
+    BinaryData *data, const PsddParameter &alpha) {
   for (Cluster *cur_cluster : clusters_) {
     cur_cluster->LearnParametersUsingLaplacianSmoothing(data, alpha);
   }
@@ -206,7 +215,8 @@ bool Network::IsModel(const std::bitset<MAX_VAR> &variable_mask,
 Probability Network::CalculateProbability(BinaryData *data) const {
   Probability total_probability = Probability::CreateFromDecimal(1);
   for (Cluster *cur_cluster : clusters_) {
-    total_probability = total_probability * cur_cluster->CalculateProbability(data);
+    total_probability =
+        total_probability * cur_cluster->CalculateProbability(data);
   }
   return total_probability;
 }
@@ -220,14 +230,14 @@ const std::vector<std::string> &Network::cluster_names() const {
 std::unordered_map<std::string, uint32_t> Network::GetVariableIndexMap() const {
   std::unordered_map<std::string, uint32_t> variable_index_map;
   auto variable_name_size = variable_names_.size();
-  for (auto i = 1; i < variable_name_size; ++i){
-    variable_index_map[variable_names_[i]] = (uint32_t) i;
+  for (auto i = 1; i < variable_name_size; ++i) {
+    variable_index_map[variable_names_[i]] = (uint32_t)i;
   }
   return variable_index_map;
 }
 void Network::SampleParameters(RandomDoubleGenerator *generator) {
-  for (Cluster * cur_cluster: clusters_){
+  for (Cluster *cur_cluster : clusters_) {
     cur_cluster->SampleParameters(generator);
   }
 }
-}
+}  // namespace structured_bn
