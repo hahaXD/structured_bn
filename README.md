@@ -34,11 +34,20 @@ For example, the following command compiles an SBN whose structure is specified 
 ```
 
 ## Dataset
-The learning dataset is a comma separated csv, where the column i represents the value of variable i+1. The index of a variable starts from 1.
+The learning dataset is a comma separated file, where the column i represents the value of variable i+1. The index of a variable starts from 1.
 
-For example, the following datafile specifies a single training example where the variable 1 is 1 and variable 2 is 0.
+For example, the following datafile specifies ten training examples, five of each valid instantiation. One valid instantiation is where variable 1 is 1 and variable 2 is 0. The other valid instantiation is where variable 1 is 0 and variable 2 is 1.
 
 ```
-1 0
+1,0
+0,1
+0,1
+1,0
+0,1
+1,0
+1,0
+0,1
+1,0
+0,1
 ```
 
